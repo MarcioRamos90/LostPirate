@@ -1,0 +1,56 @@
+package main
+import "core:fmt"
+
+import rl "vendor:raylib"
+
+main :: proc()
+{
+    screenWidth: i32 = 1280
+    screenHeight: i32 = 720
+
+    rl.InitWindow(screenWidth, screenHeight, "The game name")
+    rl.SetWindowState({.WINDOW_RESIZABLE})
+    
+    // Grass
+    platform_grass := rl.LoadTexture("assets/platform-grass.png")
+    
+    // Player
+    player_texture: rl.Texture = rl.LoadTexture("assets/player.png")
+    player_position : [2]f32 = {40, 50}
+    player_velocity : f32 = 3
+
+
+    rl.SetTargetFPS(100)
+
+    for !rl.WindowShouldClose() 
+    {
+	if rl.IsKeyDown(rl.KeyboardKey.DOWN)
+	{
+	    player_position.y += player_velocity
+	}
+	else if rl.IsKeyDown(.UP)
+	{
+	    player_position.y -= player_velocity
+	}
+	else if rl.IsKeyDown(.LEFT)
+	{
+	    player_position.x -= player_velocity
+	}
+	else if rl.IsKeyDown(.RIGHT)
+	{
+	    player_position.x += player_velocity
+	}
+
+	rl.BeginDrawing()
+	{
+	    rl.ClearBackground(rl.BLACK)
+	    
+	    rl.DrawTextureEx(platform_grass, {20, 20}, 0, 1, rl.WHITE)
+
+	    rl.DrawTextureEx(player_texture, player_position, 0, 2, rl.RED)
+	}	
+	rl.EndDrawing()
+    }
+
+    rl.CloseWindow()
+}
