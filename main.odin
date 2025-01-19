@@ -3,7 +3,7 @@ import "core:fmt"
 
 import rl "vendor:raylib"
 
-platform :: struct {
+Platform :: struct {
     texture: rl.Texture2D,
     position: rl.Vector2,
 }
@@ -14,10 +14,17 @@ Player :: struct {
     velocity: f32
 }
 
-item :: struct {
-    texture: rl.Texture2D,
-    position: rl.Vector2,
-    health: u16,
+Item :: struct {
+	texture: rl.Texture2D,
+	position: rl.Vector2,
+	health: u16,
+	active: bool,
+	grabbable: bool
+}
+
+Iventory :: [20]struct {
+	item: Item,
+	quantity: u32,
 }
 
 PixelwindowHeight :: 180
@@ -31,26 +38,29 @@ main :: proc()
     rl.SetWindowState({.WINDOW_RESIZABLE})
 
     // sland
-    sland := platform{}
+    sland := Platform{}
     sland.texture = rl.LoadTexture("assets/sland-1.png")
     
+    // Iventory
+    iventory := Iventory{}
+
     // Player
     player := Player{}
     player.texture = rl.LoadTexture("assets/player.png")
     player.position = {40, 50}
     player.velocity = 2
 
-
     // Tree
-    tree := item{}
+    tree := Item{}
     tree.texture = rl.LoadTexture("assets/tree0.png")
-    tree.position = {f32(sland.texture.width/2), f32(sland.texture.height/2)}
+    tree.position = rl.Vector2{f32(sland.texture.width/2), f32(sland.texture.height/2)}
     tree.health = 3
 
     // item-wood-tree0
-    wood0 := item{}
+    wood0 := Item{}
     wood0.texture = rl.LoadTexture("assets/item-wood-tree0.png")
     wood0.position = {0, 0}
+    wood0.grabbable = true
 
     rl.SetTargetFPS(100)
 
@@ -73,18 +83,35 @@ main :: proc()
 	    player.position.x += player.velocity
 	}
 
-	// Atack
+	// Atack item
 	if rl.IsKeyDown(.SPACE)
 	{
 	    // calculate distance
-	    distance := rl.Vector2Distance(player.position, tree.position)
+	    distance := rl.Vector2Distance(player.position, rl.Vector2{tree.position.x, tree.position.y + f32(tree.texture.height / 2)})
 	    fmt.println(distance)
-	    if distance < f32(3)
+	    if distance < f32(50)
 	    {
 		tree.health -= 1
 	    }
 	}
+
+	if rl.IsKeyDown(.G)
+	{
+	    distance := rl.Vector2Distance(player.position, rl.Vector2{wood0.position.x, wood0.position.y})
+	    if (wood0.grabbable)
+	    {
+	         wood0.active = false
+		 iventory[0].item = wood0
+		 iventory[0].quantity += 1
+	    }
+            fmt.println(distance)
+	}
 	
+	// check ivnetory
+	if rl.IsKeyDown(.I)
+	{
+            fmt.println(iventory[0])
+	}
 	camera := rl.Camera2D {
 	    offset = {f32(rl.GetScreenWidth() / 2), f32(rl.GetScreenHeight() / 2)},
 	    target = player.position,
@@ -118,7 +145,7 @@ main :: proc()
     rl.CloseWindow()
 }
 
-DrawTree :: proc(tree: ^item, wood0: ^item) {
+DrawTree :: proc(tree: ^Item, wood0: ^Item) {
     if tree.health <= 3 {
 	wood0.position = tree.position
 	rl.DrawTextureEx(tree.texture, tree.position, 0, 1, rl.WHITE)
