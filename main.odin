@@ -61,6 +61,7 @@ main :: proc()
     wood0.texture = rl.LoadTexture("assets/item-wood-tree0.png")
     wood0.position = {0, 0}
     wood0.grabbable = true
+    wood0.active = true
 
     rl.SetTargetFPS(100)
 
@@ -136,6 +137,24 @@ main :: proc()
 		rl.DrawTextureEx(player.texture, player.position, 0, 1, rl.WHITE)
 		DrawTree(&tree, &wood0)
 	    }
+
+	    // Show Iventory
+	    {
+		bar_size : i32 = 320
+		rect_size : i32 = 32
+		position := player.position
+		y_pos := i32(position.y) - (screenHeight/4) + 10
+		x_pos := i32(position.x) - (bar_size/2)
+		rl.DrawRectangle(x_pos, y_pos, bar_size, 30, rl.RED)
+		for i in 0..<10{
+		    next_x := x_pos + i32(i) * bar_size/10
+		    item := iventory[i].item
+		    rl.DrawTextureEx(item.texture, {f32(next_x) - f32(item.texture.width/2), f32(y_pos) - f32(item.texture.height/2)}, 0, 2, rl.WHITE)
+		    text : cstring = "A piece of wood"
+		    rl.DrawText(text, x_pos, y_pos + 35, 10, rl.BLACK) 
+		}
+	    }
+
 	    rl.EndMode2D()
 
 	}	
@@ -152,6 +171,8 @@ DrawTree :: proc(tree: ^Item, wood0: ^Item) {
     }
     else
     {
-	rl.DrawTextureEx(wood0.texture, wood0.position, 0, 2, rl.WHITE)
+	if wood0.active {
+	    rl.DrawTextureEx(wood0.texture, wood0.position, 0, 2, rl.WHITE)
+	}
     }
 }
