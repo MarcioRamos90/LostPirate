@@ -11,23 +11,39 @@ Platform :: struct {
 Player :: struct {
     texture: rl.Texture2D,
     position: rl.Vector2,
-    velocity: f32
+    velocity: f32,
+}
+
+ItemType :: enum {
+    TREE0,
+    WOOD0,
 }
 
 Item :: struct {
-	texture: rl.Texture2D,
-	position: rl.Vector2,
-	health: u16,
-	active: bool,
-	grabbable: bool
+    texture: rl.Texture2D,
+    position: rl.Vector2,
+    health: u16,
+    active: bool,
+    grabbable: bool,
+    type: ItemType,
 }
 
 Iventory :: [20]struct {
-	item: Item,
-	quantity: u32,
+    type: ItemType,
+    quantity: u32,
 }
 
 PixelwindowHeight :: 180
+
+ItemTextures :: struct {
+    wood0: rl.Texture2D,
+    tree0: rl.Texture2D,
+}
+
+get_texture_from_type :: proc(type: ItemType, textures: ItemTextures) -> rl.Texture2D
+{
+   return textures.wood0
+}
 
 main :: proc()
 {
@@ -50,18 +66,25 @@ main :: proc()
     player.position = {40, 50}
     player.velocity = 2
 
+    // Textures items
+    textures := ItemTextures{}
+    textures.wood0 = rl.LoadTexture("assets/item-wood-tree0.png")
+    textures.tree0 = rl.LoadTexture("assets/tree0.png")
+
     // Tree
     tree := Item{}
-    tree.texture = rl.LoadTexture("assets/tree0.png")
+    tree.texture = textures.tree0
     tree.position = rl.Vector2{f32(sland.texture.width/2), f32(sland.texture.height/2)}
     tree.health = 3
+    tree.type = .TREE0
 
     // item-wood-tree0
-    wood0 := Item{}
-    wood0.texture = rl.LoadTexture("assets/item-wood-tree0.png")
-    wood0.position = {0, 0}
-    wood0.grabbable = true
-    wood0.active = true
+    wood := Item{}
+    wood.texture = textures.wood0
+    wood.position = {0, 0}
+    wood.grabbable = true
+    wood.active = true
+    wood.type = .WOOD0
 
     rl.SetTargetFPS(100)
 
@@ -98,11 +121,11 @@ main :: proc()
 
 	if rl.IsKeyDown(.G)
 	{
-	    distance := rl.Vector2Distance(player.position, rl.Vector2{wood0.position.x, wood0.position.y})
-	    if (wood0.grabbable)
+	    distance := rl.Vector2Distance(player.position, rl.Vector2{wood.position.x, wood.position.y})
+	    if (distance <= f32(50) && wood.type == .WOOD0)
 	    {
-	         wood0.active = false
-		 iventory[0].item = wood0
+	         wood.active = false
+		 iventory[0].type = .WOOD0
 		 iventory[0].quantity += 1
 	    }
             fmt.println(distance)
@@ -129,13 +152,13 @@ main :: proc()
 	    
 	    if tree.position.y + f32(tree.texture.height/2) < player.position.y
 	    {
-		DrawTree(&tree, &wood0)
+		DrawTree(&tree, &wood)
 		rl.DrawTextureEx(player.texture, player.position, 0, 1, rl.WHITE)
 	    }
 	    else
 	    {
 		rl.DrawTextureEx(player.texture, player.position, 0, 1, rl.WHITE)
-		DrawTree(&tree, &wood0)
+		DrawTree(&tree, &wood)
 	    }
 
 	    // Show Iventory
@@ -147,11 +170,13 @@ main :: proc()
 		x_pos := i32(position.x) - (bar_size/2)
 		rl.DrawRectangle(x_pos, y_pos, bar_size, 30, rl.RED)
 		for i in 0..<10{
-		    next_x := x_pos + i32(i) * bar_size/10
-		    item := iventory[i].item
-		    rl.DrawTextureEx(item.texture, {f32(next_x) - f32(item.texture.width/2), f32(y_pos) - f32(item.texture.height/2)}, 0, 2, rl.WHITE)
-		    text : cstring = "A piece of wood"
-		    rl.DrawText(text, x_pos, y_pos + 35, 10, rl.BLACK) 
+		    if iventory[i].quantity > 0 {
+			next_x := x_pos + i32(i) * bar_size/10
+			texture := get_texture_from_type(iventory[i].type, textures)
+			rl.DrawTextureEx(texture, {f32(next_x) - f32(texture.width/2), f32(y_pos) - f32(texture.height/2)}, 0, 2, rl.WHITE)
+			text : cstring = "A piece of wood"
+			rl.DrawText(text, x_pos, y_pos + 35, 10, rl.BLACK) 
+		    }
 		}
 	    }
 
@@ -164,15 +189,15 @@ main :: proc()
     rl.CloseWindow()
 }
 
-DrawTree :: proc(tree: ^Item, wood0: ^Item) {
+DrawTree :: proc(tree: ^Item, wood: ^Item) {
     if tree.health <= 3 {
-	wood0.position = tree.position
+	wood.position = tree.position
 	rl.DrawTextureEx(tree.texture, tree.position, 0, 1, rl.WHITE)
     }
     else
     {
-	if wood0.active {
-	    rl.DrawTextureEx(wood0.texture, wood0.position, 0, 2, rl.WHITE)
+	if wood.active {
+	    rl.DrawTextureEx(wood.texture, wood.position, 0, 2, rl.WHITE)
 	}
     }
 }
