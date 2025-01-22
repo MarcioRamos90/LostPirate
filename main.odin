@@ -1,5 +1,7 @@
 package main
+
 import "core:fmt"
+import "core:math/rand"
 
 import rl "vendor:raylib"
 
@@ -40,15 +42,47 @@ ItemTextures :: struct {
     tree0: rl.Texture2D,
 }
 
+tree_items := [10]Item{}
+
+screenWidth: i32 = 1280
+screenHeight: i32 = 720
+
+init_items :: proc(textures: ^ItemTextures, platform: ^Platform)
+{
+    for i in 0..<10 {
+	x := rand.float32_range(0, f32(platform.texture.width))
+	y := rand.float32_range(0, f32(platform.texture.height))
+
+	tree_items[i].texture = textures.tree0
+	tree_items[i].position = {x, y}
+	tree_items[i].active = true
+	tree_items[i].health = 3
+	tree_items[i].type = ItemType.TREE0
+    }
+}
+
 get_texture_from_type :: proc(type: ItemType, textures: ItemTextures) -> rl.Texture2D
 {
    return textures.wood0
 }
 
+DrawTree :: proc(tree_items: ^[10]Item, wood: ^Item) {
+    for tree in tree_items {
+	if tree.health <= 3 {
+	    wood.position = tree.position
+	    rl.DrawTextureEx(tree.texture, tree.position, 0, 1, rl.WHITE)
+	}
+	else
+	{
+	    if wood.active {
+		rl.DrawTextureEx(wood.texture, wood.position, 0, 2, rl.WHITE)
+	    }
+	}
+    }
+}
+
 main :: proc()
 {
-    screenWidth: i32 = 1280
-    screenHeight: i32 = 720
 
     rl.InitWindow(screenWidth, screenHeight, "Lost Pirate")
     rl.SetWindowState({.WINDOW_RESIZABLE})
@@ -71,10 +105,13 @@ main :: proc()
     textures.wood0 = rl.LoadTexture("assets/item-wood-tree0.png")
     textures.tree0 = rl.LoadTexture("assets/tree0.png")
 
+    // Init Tree
+    init_items(&textures, &sland)
+
     // Tree
     tree := Item{}
     tree.texture = textures.tree0
-    tree.position = rl.Vector2{f32(sland.texture.width/2), f32(sland.texture.height/2)}
+    tree.position = {f32(sland.texture.width/2), f32(sland.texture.height/2)}
     tree.health = 3
     tree.type = .TREE0
 
@@ -110,12 +147,14 @@ main :: proc()
 	// Atack item
 	if rl.IsKeyDown(.SPACE)
 	{
-	    // calculate distance
-	    distance := rl.Vector2Distance(player.position, rl.Vector2{tree.position.x, tree.position.y + f32(tree.texture.height / 2)})
-	    fmt.println(distance)
-	    if distance < f32(50)
-	    {
-		tree.health -= 1
+	    for &tree in tree_items {
+		// calculate distance
+		distance := rl.Vector2Distance(player.position, rl.Vector2{tree.position.x, tree.position.y + f32(tree.texture.height / 2)})
+		fmt.println(distance)
+		if distance < f32(50)
+		{
+		    tree.health -= 1
+		}
 	    }
 	}
 
@@ -131,11 +170,12 @@ main :: proc()
             fmt.println(distance)
 	}
 	
-	// check ivnetory
+	// check iventory
 	if rl.IsKeyDown(.I)
 	{
             fmt.println(iventory[0])
 	}
+
 	camera := rl.Camera2D {
 	    offset = {f32(rl.GetScreenWidth() / 2), f32(rl.GetScreenHeight() / 2)},
 	    target = player.position,
@@ -152,13 +192,13 @@ main :: proc()
 	    
 	    if tree.position.y + f32(tree.texture.height/2) < player.position.y
 	    {
-		DrawTree(&tree, &wood)
+		DrawTree(&tree_items, &wood)
 		rl.DrawTextureEx(player.texture, player.position, 0, 1, rl.WHITE)
 	    }
 	    else
 	    {
 		rl.DrawTextureEx(player.texture, player.position, 0, 1, rl.WHITE)
-		DrawTree(&tree, &wood)
+		DrawTree(&tree_items, &wood)
 	    }
 
 	    // Show Iventory
@@ -179,25 +219,9 @@ main :: proc()
 		    }
 		}
 	    }
-
 	    rl.EndMode2D()
-
 	}	
 	rl.EndDrawing()
     }
-
     rl.CloseWindow()
-}
-
-DrawTree :: proc(tree: ^Item, wood: ^Item) {
-    if tree.health <= 3 {
-	wood.position = tree.position
-	rl.DrawTextureEx(tree.texture, tree.position, 0, 1, rl.WHITE)
-    }
-    else
-    {
-	if wood.active {
-	    rl.DrawTextureEx(wood.texture, wood.position, 0, 2, rl.WHITE)
-	}
-    }
 }
